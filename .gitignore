@@ -1,0 +1,6 @@
+/example_result/
+/test_result/
+/venv/
+library.npy
+csodiaq_library.npy
+test.ipynb

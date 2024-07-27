@@ -1,0 +1,26 @@
+<RCC>
+  <qresource prefix="normal">
+    <file>svgs/normal/amount.svg</file>
+    <file>svgs/normal/cosine.svg</file>
+    <file>svgs/normal/distance.svg</file>
+    <file>svgs/normal/end_cycle.svg</file>
+    <file>svgs/normal/Introduction.svg</file>
+    <file>svgs/normal/library.svg</file>
+    <file>svgs/normal/mzml.svg</file>
+    <file>svgs/normal/mzxml.svg</file>
+    <file>svgs/normal/random_seed.svg</file>
+    <file>svgs/normal/setting.svg</file>
+    <file>svgs/normal/shared_count.svg</file>
+    <file>svgs/normal/sqrt_cosine.svg</file>
+    <file>svgs/normal/start_cycle.svg</file>
+    <file>svgs/normal/strategy.svg</file>
+    <file>svgs/normal/switch.svg</file>
+    <file>svgs/normal/view_progress.svg</file>
+  </qresource>
+  <qresource prefix="selected">
+    <file>svgs/selected/Introduction.svg</file>
+    <file>svgs/selected/setting.svg</file>
+    <file>svgs/selected/view_progress.svg</file>
+    <file>svgs/RE-FIGS.svg</file>
+  </qresource>
+</RCC>
