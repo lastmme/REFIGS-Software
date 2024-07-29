@@ -4,3 +4,4 @@
 library.npy
 csodiaq_library.npy
 test.ipynb
+**/__pycache__
