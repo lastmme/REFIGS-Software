@@ -1,6 +1,7 @@
 /example_result/
 /test_result/
 /venv/
+/temp/
 library.npy
 csodiaq_library.npy
 test.ipynb

@@ -3,7 +3,7 @@ from multiprocessing import Queue
 import pandas as pd
 import numpy as np
 
-from .myms import spectrum_normalization, LoadMS2, deconvolute,get_scanNum_per_cycle
+from .myms import spectrum_normalization, LoadMS2, deconvolute
 from CsoDIAq import spectra_matcher_functions as smf
 
 
@@ -68,25 +68,49 @@ def refigs_quantification(
     
     # 系数补全
     coeffs_toquant=Coeffs.copy()
-    scans_per_cycle = get_scanNum_per_cycle(mzxml_file)
+    # scans_between_same_window = get_scanNum_between_same_window(mzxml_file)
+    header=[[(x[1][0] + x[1][1]) / 2, x[2], x[3]] for x in MS2]
     
-    coeffs_toquant=coeffs_toquant[coeffs_toquant['level']==2]
-    unikeys = set(coeffs_toquant[['peptide', 'charge']].apply(tuple, axis=1))
-    for key in unikeys:
-        tmp_df = coeffs_toquant[(coeffs_toquant['peptide'] == key[0]) & (coeffs_toquant['charge'] == key[1])]
-        tmp_df = tmp_df.sort_values('scan')
-        i=0
+    # coeffs_toquant=coeffs_toquant[coeffs_toquant['level']==2]
+    # unikeys = set(coeffs_toquant[['peptide', 'charge']].apply(tuple, axis=1))
+    # for key in unikeys:
+    #     tmp_df = coeffs_toquant[(coeffs_toquant['peptide'] == key[0]) & (coeffs_toquant['charge'] == key[1])].copy()
+    #     # tmp_df = tmp_df.sort_values('scan')
+    #     tmp_df['scan'] = np.floor(tmp_df['scan'] / scans_between_same_window)
+    #     tmp_df = tmp_df.drop_duplicates('scan')
+    #     tmp_df=tmp_df.sort_values('scan')
+    #     filled_coeffs=fillcoeffs(tmp_df, max_void_num=4)
+           
         
 
     
 
 def fillcoeffs(
-    coeffs: np.ndarray,
+    coeffs_df: pd.DataFrame,
     max_void_num: int = 4
+):
+    
+    pass
+
+
+def QuantifyAllFromCoeffs(
+    coeffs: pd.DataFrame,
+    header: list,
+    fillcoeffsflag: bool = True
+):
+    IDs=set(coeffs[['peptide', 'charge']].apply(tuple, axis=1))
+    pass
+
+def EnoughData(
+    peptide_coeffs: pd.DataFrame,
 ):
     pass
 
-def quantification_from_coeffs(
-    coeffs: np.ndarray,
+def QuantifyPeptide(
+    peptide_coeffs:pd.DataFrame,
+    id: tuple,
+    peptide_header: list,
+    fillcoeffsflag: bool = True,
+    RT_window: bool=False
 ):
     pass

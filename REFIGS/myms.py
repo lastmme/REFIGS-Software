@@ -22,6 +22,18 @@ def get_scanNum_per_cycle(path: str):
                 MS1.append(i)
     return MS1[1] - MS1[0] - 1
 
+def get_scanNum_between_same_window(path: str):
+    MS2=[]
+    with mzxml.read(path,use_index=True) as spectra:
+        for i,spec in enumerate(spectra,1):
+            if spec['msLevel']==2:
+                MS2.append(i)
+                break
+        for i,spec in enumerate(spectra,1):
+            if spec['msLevel']==2 and i>=MS2[-1]+1 and spec['precursorMz'][0]['precursorMz']==spectra[MS2[-1]]['precursorMz'][0]['precursorMz']:
+                MS2.append(i)
+                break
+    return MS2[1] - MS2[0] + 1
 
 def LoadMS2(path: str):
     MS2 = []
