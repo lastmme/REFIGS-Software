@@ -1,8 +1,10 @@
 /example_result/
 /test_result/
 /venv/
+/temp/
 library.npy
 csodiaq_library.npy
 test.ipynb
+test.py
 __pycache__/
 *.pyc
