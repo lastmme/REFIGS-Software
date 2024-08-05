@@ -23,11 +23,12 @@ from qfluentwidgets import (
     PushSettingCard,
     SwitchSettingCard,
     ScrollArea,
-    VBoxLayout
+    VBoxLayout,
+    MessageBox
 )
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets.components.settings.folder_list_setting_card import FolderItem
-from PySide6.QtWidgets import QWidget, QFileDialog, QSizePolicy, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QFileDialog, QSizePolicy, QHBoxLayout,QMessageBox
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QIcon
 
@@ -638,6 +639,19 @@ class SettingInterface(ScrollArea):
 
     def get_params(self):
         self.excute_button.setEnabled(False)
+        if len(self.mzxml_files_card.files) == 0:
+            self.excute_button.setEnabled(True)
+            self.show_error_message('Error', 'Please select mzXML files')
+            return None
+        if self.library_file_card.contentLabel.text() == '':
+            self.excute_button.setEnabled(True)
+            self.show_error_message('Error', 'Please select library file')
+            return None
+        if self.result_file_card.contentLabel.text() == '':
+            self.excute_button.setEnabled(True)
+            self.show_error_message('Error', 'Please select result folder')
+            return None
+        
         return self.worker_num_card.value, {
             'mzxml_files': self.mzxml_files_card.files,
             # 'mzml_files': self.mzml_files_card.files,
@@ -659,3 +673,11 @@ class SettingInterface(ScrollArea):
             # 'scans_per_cycle': self.scans_per_cycle.configItem.value,
             'seed': self.seed_card.configItem.value
         }
+    
+    def show_error_message(self, title, message):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()

@@ -54,6 +54,8 @@ class Window(MSFluentWindow):
         相当于初始化 worker，因为后面还需要进行 worker 的调度
         """
         params = self.setting_interface.get_params()
+        if params is None:
+            return
         worker_num=params[0]
         mzxml_files=params[1]['mzxml_files']
         other_params=params[1]

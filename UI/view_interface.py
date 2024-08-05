@@ -2,9 +2,21 @@ from multiprocessing import Process, Queue,Lock
 # import threading
 import os
 
-from PySide6.QtWidgets import QTextEdit,QVBoxLayout, QWidget,QListWidget,QLabel,QGridLayout,QHBoxLayout,QListWidgetItem
+from PySide6.QtWidgets import (
+    QTextEdit,
+    QVBoxLayout, 
+    QWidget,
+    QListWidget,
+    QLabel,
+    QGridLayout,
+    QHBoxLayout,
+    QListWidgetItem,
+    QScrollArea,
+    QSplitter
+    )
 from PySide6.QtCore import QTimer, Signal, QObject,Qt
 from PySide6.QtGui import QTextCursor,QColor
+# from qfluentwidgets import FlowLayout, TableWidget,VBoxLayout
 
 from pipeline import cal_library
 
@@ -18,8 +30,8 @@ class LogOutput(QTextEdit):
                 background-color: transparent;
                 color: #000000;
                 font-family: Consolas, monospace;
-                font-size: 16px;
-                border: none;
+                font-size: 12px;
+                border: 1px solid #000000;
             }
             """
         )
@@ -156,51 +168,75 @@ class ViewInterface(QWidget):
         self.setObjectName(object_name)
         self.workers: dict[int,Worker] = {}
         self.lock=Lock()
-        self.log_output=LogOutput(self)
+        # self.log_output=LogOutput(self)
 
        
         self.worker_logs = {}  # 存储每个 worker 的日志框
 
-        layout = QVBoxLayout(self)
-
+        layout = QHBoxLayout(self)
         self.setObjectName(object_name)
-
+        
+        splitter=QSplitter(self)
+        splitter.setOrientation(Qt.Orientation.Horizontal)
         # 创建文件状态列表
-        files_layout=QHBoxLayout()
+        files_widget=QWidget()
+        files_widget.setStyleSheet("background-color: #f0f0f0;")
+        files_layout=QVBoxLayout(files_widget)
         self.unprocessed_list = QListWidget(self)
         self.processing_list = QListWidget(self)
         self.processed_list = QListWidget(self)
-        files_layout.addWidget(QLabel("未处理的文件"))
+        files_layout.addWidget(QLabel("待处理"))
         files_layout.addWidget(self.unprocessed_list)
-        files_layout.addWidget(QLabel("正在处理的文件"))
+        files_layout.addWidget(QLabel("处理中"))
         files_layout.addWidget(self.processing_list)
-        files_layout.addWidget(QLabel("已处理完成的文件"))
+        files_layout.addWidget(QLabel("已完成"))
         files_layout.addWidget(self.processed_list)
-        layout.addLayout(files_layout)
+        splitter.addWidget(files_widget)
         
+        scroll_area = QScrollArea(self)
+        scroll_area.setWidgetResizable(True)
+        content_widget = QWidget()
+        self.worker_log_layout = QGridLayout(content_widget)
+        scroll_area.setWidget(content_widget)
+        splitter.addWidget(scroll_area)
         
-        # 添加 Worker 日志框
-        self.worker_log_layout = QGridLayout()
-        layout.addLayout(self.worker_log_layout)
-
+        layout.addWidget(splitter)
+        self.setLayout(layout)
+        
+        splitter.setSizes([splitter.width()//6,splitter.width()*1//4])
         
     def create_worker_log(self, worker_id):
         log_output = LogOutput(self)
-
-        # 计算行列索引
-        row = len(self.worker_logs) // 2  # 每行2个
-        col = len(self.worker_logs) % 2   # 当前列数
-
-        self.worker_log_layout.addWidget(QLabel(f"Worker {worker_id}"), row, col * 2)  # 标签
-        self.worker_log_layout.addWidget(log_output, row, col * 2 + 1)  # 日志框
-        self.worker_logs[worker_id] = log_output  # 保存日志框的引用
+        # log_output.setFixedHeight(300)
+        log_output.setMinimumHeight(300)
+        
+        current_count = len(self.worker_logs)
+        row = current_count // 2
+        col = current_count % 2
+        
+        self.worker_log_layout.addWidget(QLabel(f"Worker {worker_id}"), row*2, col)  # 标签
+        self.worker_log_layout.addWidget(log_output, row*2+1, col)  # 日志框
+        
+        # 保存日志框的引用
+        self.worker_logs[worker_id] = log_output
     
     def clear_worker_log(self):
         for i in reversed(range(self.worker_log_layout.count())):
             item=self.worker_log_layout.itemAt(i)
             wigdet=item.widget()
-            self.worker_log_layout.removeWidget(wigdet)
-            wigdet.deleteLater()
+            layout=item.layout()
+            if wigdet is not None:
+                self.worker_log_layout.removeWidget(wigdet)
+                wigdet.deleteLater()  
+            elif layout is not None:
+                self.worker_log_layout.removeItem(layout)
+                for j in reversed(range(layout.count())):
+                    sub_item=layout.itemAt(j)
+                    sub_wigdet=item.widget()
+                    if sub_wigdet is not None:
+                        layout.removeWidget(sub_wigdet)
+                        sub_wigdet.deleteLater()    
+                layout.deleteLater()                                              
         for worker_log in self.worker_logs.values():
             worker_log.clear()
             del worker_log
@@ -250,8 +286,8 @@ class ViewInterface(QWidget):
         self.filenames = [os.path.basename(file) for file in mzxml_files]
         self.worker_num = worker_num
         self.other_params = other_params
-        self.processed_files:dict[int,list] = {}  # 下标
-        self.processing_files:dict[int,int] ={} # 下标
+        self.processed_files:dict[int,list] = {}  
+        self.processing_files:dict[int,int] ={} 
         self.cur_index = 0
 
         self.unprocessed_list.clear()
