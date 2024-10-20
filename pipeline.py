@@ -7,7 +7,7 @@ import numpy as np
 from utils.library import extend_library
 from CsoDIAq.csodiaq_identification_functions import perform_spectra_pooling_and_analysis
 
-from REFIGS.identification import refigs_identification
+from REFIGS.identification import refigs_identification,refigs_identification_for_args
 from REFIGS.quantification import refigs_quantification
 
 
@@ -24,6 +24,7 @@ def pipeline(
     is_top10: bool,
     start_cycle: int,
     end_cycle: int,
+    is_auto_search_refigs_params: bool,
     good_shared_limit: int,
     good_cos_sim_limit: int,
     good_sqrt_cos_sim_limit: int,
@@ -57,21 +58,6 @@ def pipeline(
     3. QProcess.finished() ... 进程结束触发什么信号
     """
     try:
-        
-        # library, csodiaq_library = extend_library(
-        #     library_file, entrap_distance,
-        #     decoy_distance, text_queue, is_entrap, is_top10
-        # )
-
-        # np.save(
-        #     os.path.join(result_dir, 'library.npy'),
-        #     library
-        # )
-
-        # np.save(
-        #     os.path.join(result_dir, 'csodiaq_library.npy'),
-        #     csodiaq_library
-        # )
         
         library=np.load(os.path.join(result_dir,'library.npy'),allow_pickle=True).item()
         csodiaq_library=np.load(os.path.join(result_dir,'csodiaq_library.npy'),allow_pickle=True).item()
@@ -127,14 +113,14 @@ def pipeline(
             text_queue.put(
                 f"{'#' * 15}  End *** analyzing the file {file_name.split('.')[0]}...  {'#' * 15}"
             )
-        text_queue.put('over success')        
+        text_queue.put('Over Success')        
         # text_queue.put('over')
     except Exception as e:
         # 将错误信息发送到 text_queue
         error_info = traceback.format_exc()
         text_queue.put(f'Process Error: {str(e)}')
         print(error_info)
-        text_queue.put('over error')
+        text_queue.put(f'Over Error: {str(e)}')
         sys.exit()
 
 def cal_library(
@@ -166,3 +152,94 @@ def cal_library(
         csodiaq_library
     )  
     text_queue.put('cal library over')  
+    
+def search_args_by_files(
+    mzxml_files: Sequence[str],
+    result_dir: str,
+    tolerance: int,
+    is_corrected: bool,
+    fdr_value: float,
+    start_cycle: int,
+    end_cycle: int,
+    seed: int,
+    text_queue: Queue,
+    max_num_spectra_pool: int = np.inf,
+    **kwargs
+):
+    # text_queue.put('cal args over')
+    # return
+
+    try:
+        text_queue.put(
+            f"{'#' * 15}  Search ReFigs Params By Files  {'#' * 15}\n"
+        )
+        library=np.load(os.path.join(result_dir,'library.npy'),allow_pickle=True).item()
+        csodiaq_library=np.load(os.path.join(result_dir,'csodiaq_library.npy'),allow_pickle=True).item()
+        
+        mzxml_dir, _ = os.path.split(mzxml_files[0])
+        args_list=[]
+        for mzxml_file in mzxml_files:
+            _,file_name=os.path.split(mzxml_file)
+            
+            text_queue.put(
+                f"Search the file: {file_name.split('.')[0]}\n"
+            )
+            
+            csv_file = file_name.replace('.mzXML', '.csv')
+            csodiaq_savepath = perform_spectra_pooling_and_analysis(
+                mzxml_file,
+                os.path.join(result_dir, csv_file),
+                csodiaq_library,
+                text_queue,
+                tolerance,
+                max_num_spectra_pool,
+                is_corrected
+            )
+            
+            args=refigs_identification_for_args(
+                fdr_value=fdr_value,
+                text_queue=text_queue,
+                mzxml_file=mzxml_file,
+                ssm_file=csodiaq_savepath,
+                library_raw=library,
+                tol=tolerance,
+                start_cycle=start_cycle,
+                end_cycle=end_cycle,    
+                seed=seed
+            )
+            args_list.append(args)
+            
+            text_queue.put(f"Search the file: {file_name.split('.')[0]} over\n")
+            text_queue.put(f"The args of the file: {file_name.split('.')[0]} is \n")
+            text_queue.put(f"good_shared_limit: {args[1]}\n")
+            text_queue.put(f"good_cos_sim_limit: {args[2]}\n")
+            text_queue.put(f"good_sqrt_cos_sim_limit: {args[3]}\n")
+            text_queue.put(f"good_count_within_cycle_limit: {args[4]}\n") 
+            text_queue.put(f"max_identified_peptides_count: {args[0]}\n\n")   
+            # print(file_name,args)
+            
+        refigs_params = {
+            'good_shared_limit': int(np.floor(np.mean(np.array([args[1] for args in args_list])))),
+            'good_cos_sim_limit': np.mean(np.array([args[2] for args in args_list])),
+            'good_sqrt_cos_sim_limit': np.mean(np.array([args[3] for args in args_list])),
+            'good_count_within_cycle_limit': int(np.floor(np.mean(np.array([args[4] for args in args_list])))),
+        }
+        
+        text_queue.put(f"The args of the all files is \n")
+        text_queue.put(f"good_shared_limit: {refigs_params['good_shared_limit']}\n")
+        text_queue.put(f"good_cos_sim_limit: {refigs_params['good_cos_sim_limit']}\n")
+        text_queue.put(f"good_sqrt_cos_sim_limit: {refigs_params['good_sqrt_cos_sim_limit']}\n")
+        text_queue.put(f"good_count_within_cycle_limit: {refigs_params['good_count_within_cycle_limit']}\n")
+        
+        np.save(
+            os.path.join(result_dir, 'refigs_params.npy'),
+            refigs_params
+        )
+        
+        text_queue.put('cal args over')
+    except Exception as e:
+        error_info = traceback.format_exc()
+        text_queue.put(f'Process Error: {str(e)}')
+        print(error_info)
+        text_queue.put(f'Over Error: {str(e)}')
+        sys.exit()

@@ -1,6 +1,8 @@
 from multiprocessing import Process, Queue,Lock
 # import threading
 import os
+import random
+import numpy as np
 
 from PySide6.QtWidgets import (
     QTextEdit,
@@ -12,13 +14,15 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QListWidgetItem,
     QScrollArea,
-    QSplitter
+    QSplitter,
+    QMessageBox 
     )
 from PySide6.QtCore import QTimer, Signal, QObject,Qt
 from PySide6.QtGui import QTextCursor,QColor
 # from qfluentwidgets import FlowLayout, TableWidget,VBoxLayout
 
-from pipeline import cal_library
+from pipeline import cal_library,search_args_by_files
+
 
 class LogOutput(QTextEdit):
     def __init__(self, parent=None):
@@ -56,6 +60,7 @@ class Worker(QObject):
     error_signal=Signal() # 出现错误
     
     lib_signal=Signal() # lib 计算标识
+    args_signal=Signal()
     
     def __init__(
         self,
@@ -85,6 +90,7 @@ class Worker(QObject):
         self.timer = QTimer()
         self.process = None
         self._connect_signal2solt()
+        self.error_info=None
 
     def _connect_signal2solt(self):
         """
@@ -98,14 +104,17 @@ class Worker(QObject):
         if not self.text_queue.empty():
             result = self.text_queue.get()
             self.log_output.write(result)
-            if result == 'over success':
+            if str(result).startswith('Over Success'):
                 self.success_signal.emit()
-            elif result == 'over failing':
+            elif str(result).startswith('Over Fail'):
                 self.fail_signal.emit()
-            elif result == 'over error':
+            elif str(result).startswith('Over Error'):
                 self.error_signal.emit()
+                self.error_info=result
             elif result == 'cal library over':
                 self.lib_signal.emit()
+            elif result == 'cal args over':
+                self.args_signal.emit()
 
     def run(self):
         """
@@ -147,6 +156,16 @@ class Worker(QObject):
         self.timer.start(100)
         self.process.start()
         
+    def cal_args(self):
+        self.destroy_resource()
+        del self.text_queue
+        self.text_queue = Queue()
+        self.log_output.flush()
+        
+        kwargs = {**self.func_params, 'text_queue': self.text_queue}
+        self.process = Process(target=search_args_by_files,kwargs=kwargs)
+        self.timer.start(100)
+        self.process.start()        
         
 
 
@@ -244,6 +263,11 @@ class ViewInterface(QWidget):
 
         
     def worker_start(self):
+        if self.is_auto_search_refigs_params:
+            refigs_params=np.load(os.path.join(self.other_params['result_dir'],'refigs_params.npy'),allow_pickle=True).item()
+            self.other_params.update(refigs_params)
+        # print(self.other_params)
+        
         for id in range(self.worker_num):
             with self.lock :
                 self.processing_files[id]=self.cur_index
@@ -264,6 +288,21 @@ class ViewInterface(QWidget):
                     func_params, self.mzxml_files[self.cur_index])
                 worker.reset_worker(self.function,func_params,self.cur_index)
                 self.cur_index += 1
+        
+    def cal_args(self):
+        if self.is_auto_search_refigs_params:
+            args_worker=self.workers[0]
+            func_params=self.other_params.copy()
+            files_num=min(5,len(self.mzxml_files))
+            selected_files = random.sample(self.mzxml_files, files_num)
+            func_params.update({
+                'mzxml_files': selected_files
+            })
+            args_worker.func_params=func_params.copy()
+            args_worker.cal_args()
+        else:
+            self.worker_start()
+            
         
         
 
@@ -286,6 +325,7 @@ class ViewInterface(QWidget):
         self.filenames = [os.path.basename(file) for file in mzxml_files]
         self.worker_num = worker_num
         self.other_params = other_params
+        self.is_auto_search_refigs_params=other_params['is_auto_search_refigs_params']
         self.processed_files:dict[int,list] = {}  
         self.processing_files:dict[int,int] ={} 
         self.cur_index = 0
@@ -307,10 +347,11 @@ class ViewInterface(QWidget):
             self.set_worker(id, self.function, self.other_params.copy())
             
         libworker=self.workers[0]
-        libworker.lib_signal.connect(lambda: self.worker_start())
+        libworker.lib_signal.connect(lambda: self.cal_args())
+        libworker.args_signal.connect(lambda: self.worker_start())
         libworker.callib_first()
 
-        
+
 
     def extend_func_params(self,func_params: dict, mzxml_file):
         func_params.update({
@@ -365,6 +406,8 @@ class ViewInterface(QWidget):
                 item=QListWidgetItem(message)
                 item.setForeground(QColor("red"))
                 self.processed_list.addItem(item)
+                error_info=self.workers[id].error_info
+                self.show_error_message('Error',f'Worker {id} has failed to process {self.filenames[self.processing_files[id]]}.{error_info}')
                 
                 
             self.processing_files[id]=-1
@@ -425,3 +468,11 @@ class ViewInterface(QWidget):
     def task_over(self):
         self.destroy_wokers()
         self.over_signal.emit()
+        
+    def show_error_message(self, title, message):
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()

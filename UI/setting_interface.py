@@ -309,7 +309,7 @@ class SettingInterface(ScrollArea):
             RangeConfigItem(
                 'decoy_parameters',
                 'decoy_distance',
-                13,
+                33,
                 RangeValidator(10, 100),
             ),
             ':/normal/svgs/normal/distance.svg',
@@ -334,7 +334,7 @@ class SettingInterface(ScrollArea):
             RangeConfigItem(
                 'csodiaq_parameters',
                 'tolerance',
-                30,
+                20,
                 RangeValidator(0, 50),
             ),
             FIF.SEARCH,
@@ -403,11 +403,24 @@ class SettingInterface(ScrollArea):
             self.tr('the cycle No. ends with'),
             self.csodiaq_paramter_groups
         )
+        
+        self.auto_search_refigs_params=SwitchSettingCard(
+            ':/normal/svgs/normal/switch.svg',
+            self.tr('自动搜索 RE-FIGS 参数'),
+            '是否自动搜索 RE-FIGS 参数：peaks_shared_limit, cosine score limit, sqrt cosine score, cycle within limit',
+            ConfigItem(
+                'RE-FIGS_identification_parameters',
+                'auto_search_refigs_params',
+                True
+            ),
+            self.csodiaq_paramter_groups
+        )
+        
         self.good_shared_limit_card = RangeSettingCard(
             RangeConfigItem(
                 'RE-FIGS_identification_parameters',
                 'good_shared_limit',
-                30,
+                5,
                 RangeValidator(3, 10),
             ),
             ':/normal/svgs/normal/shared_count.svg',
@@ -534,6 +547,7 @@ class SettingInterface(ScrollArea):
                 self.top10_card,
                 self.start_cycle_card,
                 self.end_cycle_card,
+                self.auto_search_refigs_params,
                 self.good_shared_limit_card,
                 self.good_cos_sim_limit_card,
                 self.good_sqrt_cos_sim_limit_card,
@@ -621,15 +635,16 @@ class SettingInterface(ScrollArea):
         self.worker_num_card.spin_box.setValue(1)
         self.strategy_card.configItem.value = True
         self.entrap_distance_card.configItem.value = 23
-        self.decoy_distance_card.configItem.value = 13
+        self.decoy_distance_card.configItem.value = 33
         self.fdr_card.spin_box.setValue(0)
-        self.tolerance_card.configItem.value = 30
+        self.tolerance_card.configItem.value = 20
         self.correted_switch_card.configItem.value = True
         # self.spectra_pool_card.configItem.value = 30
         self.top10_card.configItem.value = True
         self.start_cycle_card.configItem.value = 1
         self.end_cycle_card.configItem.value = 14
-        self.good_shared_limit_card.configItem.value = 10
+        self.auto_search_refigs_params.configItem.value = True
+        self.good_shared_limit_card.configItem.value = 5
         self.good_cos_sim_limit_card.configItem.value = 80
         self.good_sqrt_cos_sim_limit_card.configItem.value = 90
         self.good_count_within_cycle_limit.configItem.value = 5
@@ -666,6 +681,7 @@ class SettingInterface(ScrollArea):
             'is_top10': self.top10_card.configItem.value,
             'start_cycle': self.start_cycle_card.configItem.value,
             'end_cycle': self.end_cycle_card.configItem.value,
+            'is_auto_search_refigs_params': self.auto_search_refigs_params.configItem.value,
             'good_shared_limit': self.good_shared_limit_card.configItem.value,
             'good_cos_sim_limit': float(self.good_cos_sim_limit_card.configItem.value) / 100,
             'good_sqrt_cos_sim_limit': float(self.good_sqrt_cos_sim_limit_card.configItem.value)/100,
