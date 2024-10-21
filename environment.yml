@@ -1,4 +1,4 @@
-name: test
+name: refigs
 channels:
   - defaults
 dependencies:
