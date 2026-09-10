@@ -40,7 +40,8 @@ def refigs_identification(
     scans_per_cycle = get_scanNum_per_cycle(mzxml_file)
 
     # loading ssm result
-    df = pd.read_csv(ssm_file)
+    df = pd.read_csv(ssm_file,encoding="GBK")
+    # df = pd.read_csv(ssm_file,encoding='utf-8')
     if not 'cycle' in df.columns:
         df['cycle'] = df['scan'].apply(lambda x: (x-1)//scans_per_cycle+1)
 
@@ -161,7 +162,7 @@ def refigs_identification(
     # RE-FIGS distinguish decoy by the peptide sequence.
     # Decoy's name starts with "DECOY"
 
-    df = pd.read_csv(feature_filepath)
+    df = pd.read_csv(feature_filepath,encoding="GBK")
     df['protein'] = df['name'].apply(
         lambda x: 'DECOY_null' if x.startswith('DECOY') else 'TARGET')
     df['label'] = df['protein'].apply(lambda x: 0 if x == 'DECOY_null' else 1)
@@ -317,7 +318,7 @@ def refigs_identification_for_args(
     
     library=spectrum_normalization(library_raw)
     scans_per_cycle=get_scanNum_per_cycle(mzxml_file)
-    df=pd.read_csv(ssm_file)
+    df=pd.read_csv(ssm_file,encoding="GBK")
     
     if not 'cycle' in df.columns:
         df['cycle']=df['scan'].apply(lambda x:(x-1)//scans_per_cycle+1)
@@ -432,7 +433,7 @@ def refigs_identification_for_args(
     # RE-FIGS distinguish decoy by the peptide sequence.
     # Decoy's name starts with "DECOY"
 
-    df = pd.read_csv(feature_filepath)
+    df = pd.read_csv(feature_filepath,encoding="GBK")
     df['protein'] = df['name'].apply(
         lambda x: 'DECOY_null' if x.startswith('DECOY') else 'TARGET')
     df['label'] = df['protein'].apply(lambda x: 0 if x == 'DECOY_null' else 1)

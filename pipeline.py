@@ -67,6 +67,7 @@ def pipeline(
         mzxml_dir, _ = os.path.split(mzxml_files[0])
 
         for mzxml_file in mzxml_files:
+            mzxml_file = os.path.abspath(mzxml_file)
             _, file_name = os.path.split(mzxml_file)
             text_queue.put(
                 f"{'#' * 15}  Analyzing the file {file_name.split('.')[0]}...  {'#' * 15}"
@@ -134,8 +135,8 @@ def cal_library(
     **kwargs
     ):
     
-    # text_queue.put('cal library over')  
-    # return
+    text_queue.put('cal library over')  
+    return
     
     library, csodiaq_library = extend_library(
         library_file, entrap_distance,

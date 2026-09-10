@@ -25,7 +25,7 @@ def refigs_quantification(
         smf.print_milestone(
             f"{'#' * 15}  loading SSM file...  {'#' * 15}")
     )
-    Identify = pd.read_csv(SSM_file, sep=',')
+    Identify = pd.read_csv(SSM_file, sep=',',encoding="GBK")
     Identify['Precursor'] = Identify[['peptide', 'zLIB']].apply(
         lambda x: x['peptide']+'_'+str(x['zLIB']), axis=1)
     smf.print_milestone(
@@ -58,7 +58,7 @@ def refigs_quantification(
     Coeffs = pd.DataFrame(output,columns=['Coeff', 'scan', 'peptide', 'charge', 'windowMZ', 'spectrumRT', 'level', 'corr'])
     # print(Coeffs)
     
-    ids = pd.read_csv(ids_file, sep=',')
+    ids = pd.read_csv(ids_file, sep=',',encoding="GBK")
     Coeffs = Coeffs[Coeffs['peptide'].apply(
         lambda x: x in set(ids['peptide']))
     ]
