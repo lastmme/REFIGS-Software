@@ -135,8 +135,8 @@ def cal_library(
     **kwargs
     ):
     
-    text_queue.put('cal library over')  
-    return
+    # text_queue.put('cal library over')  
+    # return
     
     library, csodiaq_library = extend_library(
         library_file, entrap_distance,
