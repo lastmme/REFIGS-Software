@@ -1,4 +1,4 @@
-﻿# RE-FIGS-Software
+# RE-FIGS-Software
 
 RE-FIGS 用于直接进样鸟枪法蛋白质组分析（DI-SPA）的肽段鉴定与无标记定量，提供图谱库配置、多文件并行分析、进度查看、终止批次和文件日志归档功能。
 
@@ -118,9 +118,13 @@ python main.py
 
 ## 使用安装包
 
-从项目 Releases 选择适用于 Windows 的安装包或压缩包，按该发布版本的说明安装或解压，再运行其中的程序。预编译版本不需要另外创建 uv 环境。
+从 [Releases](https://github.com/lastmme/REFIGS-Software/releases) 下载适用于 Windows 64 位的版本，任选一种：
 
-历史发布版本可能不包含本分支新增的终止、日志归档和预计算库功能；需要当前功能时请使用对应版本源码。
+- **安装版**：下载 `RE-FIGS-1.0.0-windows-x64-setup.exe`，双击并按向导安装，随后从开始菜单启动 RE-FIGS。安装到当前用户目录，不需要额外安装 Python、uv 或 Conda。需要卸载时，在 Windows「设置 → 应用」中找到 RE-FIGS。
+- **便携版**：下载 `RE-FIGS-1.0.0-windows-x64-portable.zip`，完整解压后运行其中的 `RE-FIGS.exe`。请保留同目录的 `_internal` 文件夹，不要只复制 EXE。
+- **校验文件**：`SHA256SUMS.txt` 用于核对下载完整性。在 PowerShell 执行 `Get-FileHash 下载的文件路径 -Algorithm SHA256`，与校验文件中的对应值比较。
+
+安装包未配置代码签名。历史版本可能不包含当前说明中的全部功能，请确认下载版本。
 
 ## 使用说明
 
@@ -252,3 +256,6 @@ LDA 训练至少需要 2 个满足条件的优质目标肽段。不足时该文�
 
 终止不会删除已有输出。部分文件可能尚未写完，应结合日志与状态确认；重新运行会进入新批次目录。
 
+### 安装版或便携版无法启动
+
+如果尚未生成任务日志，可检查 `%LOCALAPPDATA%\RE-FIGS\startup.log`，反馈问题时一并提供该文件和软件版本。
