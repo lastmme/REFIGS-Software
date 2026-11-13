@@ -44,6 +44,8 @@ def entrapment(
     entrap_library = {}
     seq: str
     for (seq, charge), metadata in decoy_library.items():
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         entrap_library[(seq.replace('DECOY-', 'TRAP-'), charge)] = metadata
     return entrap_library
 
@@ -156,6 +158,8 @@ def extend_library(
     )
     if is_top10:
         for metadata in library.values():
+            if hasattr(text_queue, 'checkpoint'):
+                text_queue.checkpoint()
             spectrum = metadata['Spectrum']
             indices = np.argsort(spectrum[:, 1])[::-1][:10]
             spectrum = spectrum[indices]
@@ -164,6 +168,8 @@ def extend_library(
 
     # 转换为 CsoDIAq 库的格式
     for id, ((seq, charge), metadata) in enumerate(library.items()):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         is_decoy = 0
         if 'DECOY-' in seq:
             is_decoy = 1

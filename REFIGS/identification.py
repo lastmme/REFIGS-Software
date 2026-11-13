@@ -58,6 +58,8 @@ def refigs_identification(
 
     MS2_dict = {}
     for ms2 in (MS2):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         MS2_dict[ms2[-1]] = ms2[:-1]
 
     # Feature extraction(calculation)
@@ -88,6 +90,8 @@ def refigs_identification(
     }
 
     for idx, row in enumerate(df.values):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         if idx % 1000 == 0:
             text_queue.put(
                 smf.print_milestone(
@@ -172,6 +176,8 @@ def refigs_identification(
     # calculate the number of peptide within cycle. and keep peptide with best MaCC_Score
     df_dup_rm = pd.DataFrame([])
     for i in (range(1, cycle_max+1)):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         df_cycle = df[df['cycle'] == i]
         count = df_cycle['peptide'].value_counts()
         count_df = count.reset_index()
@@ -206,18 +212,28 @@ def refigs_identification(
     # choose good target peptide with higher requirements.
     # the choosen good target can affect the classification.
     good_target = target[target['shared'] > good_shared_limit]
+    filter_counts = [('目标候选', len(target)), ('匹配峰数', len(good_target))]
     good_target = good_target[good_target['cos_sim'] > good_cos_sim_limit]
+    filter_counts.append(('余弦相似度', len(good_target)))
     good_target = good_target[good_target['sqrt_cos_sim']
                               > good_sqrt_cos_sim_limit]
+    filter_counts.append(('平方根相似度', len(good_target)))
     good_target = good_target[good_target['count_within_cycle']
                               >= good_count_within_cycle_limit]
+    filter_counts.append(('循环内出现次数', len(good_target)))
     if len(good_target) < 2:
-        text_queue.put(
-            smf.print_milestone("The program has ended ahead of schedule, the number of good target is "+"%d" %
-                                len(good_target)+", less than 2! Please choose another parameter.")
+        from utils.task_runtime import TaskFailed
+        reason = (
+            f'文件鉴定失败：{mzxml_file}\n'
+            f'LDA 训练至少需要 2 个优质目标肽段，当前仅有 {len(good_target)} 个，无法继续训练和定量。\n'
+            '按顺序筛选后的候选数量：' + ' → '.join(f'{label}={count}' for label, count in filter_counts) + '\n'
+            f'当前条件：shared > {good_shared_limit}，cos_sim > {good_cos_sim_limit}，'
+            f'sqrt_cos_sim > {good_sqrt_cos_sim_limit}，count_within_cycle >= {good_count_within_cycle_limit}。\n'
+            '请检查谱图库与数据是否匹配，结合上述筛选数量调整参数，或开启自动搜索 RE-FIGS 参数后重试。\n'
+            '这是该文件的分析条件不满足，不是计算超时或用户终止；其他文件可继续处理。'
         )
-        text_queue.put('Over Fail')
-        sys.exit()
+        text_queue.put(reason)
+        raise TaskFailed(reason)
     if len(good_target) < 500:
         text_queue.put(
             smf.print_milestone("Not a warning, the number of good target is "+"%d" %
@@ -230,6 +246,8 @@ def refigs_identification(
     )
     # Ensemble learning。Train 10 LDA model and average the weights.
     for j in range(10):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         randidx = np.random.randint(0, len(decoy), size)
         choosen_decoy = decoy.iloc[randidx]
         DataSet_df = pd.concat([good_target, choosen_decoy])
@@ -256,6 +274,8 @@ def refigs_identification(
     decoy_number = 0
     target_number = 0
     for idx, row in final_df.iterrows():
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         protein = row['protein']
         if protein == 'DECOY_null':
             decoy_number += 1
@@ -274,6 +294,8 @@ def refigs_identification(
     decoy_number = 0
     total_decoy = len(decoy)
     for idx, row in final_df.iterrows():
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         protein = row['protein']
         if protein == 'DECOY_null':
             decoy_number += 1
@@ -290,6 +312,8 @@ def refigs_identification(
     cutoff = 1e9
     reverse_df_dup_rm = final_df.iloc[::-1]
     for idx, row in reverse_df_dup_rm.iterrows():
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         if row['FDR'] <= fdr_value:
             cutoff = row['LDA_Score']
             break
@@ -341,6 +365,8 @@ def refigs_identification_for_args(
     
     MS2_dict = {}
     for ms2 in (MS2):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         MS2_dict[ms2[-1]] = ms2[:-1]
 
     # Feature extraction(calculation)
@@ -369,6 +395,8 @@ def refigs_identification_for_args(
     }
 
     for idx, row in enumerate(df.values):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         
         scan = row[col_map['scan']]
         precursor = row[col_map['Precursor']]
@@ -443,6 +471,8 @@ def refigs_identification_for_args(
     # calculate the number of peptide within cycle. and keep peptide with best MaCC_Score
     df_dup_rm = pd.DataFrame([])
     for i in (range(1, cycle_max+1)):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         df_cycle = df[df['cycle'] == i]
         count = df_cycle['peptide'].value_counts()
         count_df = count.reset_index()
@@ -493,6 +523,8 @@ def refigs_identification_for_args(
     args_list=[]
     
     for arg_shared_limit in good_shared_limits:
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         good_target = target[target['shared'] > arg_shared_limit]
         good_target = good_target[good_target['cos_sim'] > good_cos_sim_limit]
         good_target = good_target[good_target['sqrt_cos_sim']
@@ -509,6 +541,8 @@ def refigs_identification_for_args(
             args_list.append([max_identification_count,good_shared_limit,good_cos_sim_limit,good_sqrt_cos_sim_limit,good_count_within_cycle_limit])
             
     for arg_cos_sim_limit in good_cos_sim_limits:
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         good_target = target[target['shared'] > good_shared_limit]
         good_target = good_target[good_target['cos_sim'] > arg_cos_sim_limit]
         good_target = good_target[good_target['sqrt_cos_sim']
@@ -523,6 +557,8 @@ def refigs_identification_for_args(
             good_cos_sim_limit=arg_cos_sim_limit
             args_list.append([max_identification_count,good_shared_limit,good_cos_sim_limit,good_sqrt_cos_sim_limit,good_count_within_cycle_limit])
     for arg_sqrt_cos_sim_limit in good_sqrt_cos_sim_limits:
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         good_target = target[target['shared'] > good_shared_limit]
         good_target = good_target[good_target['cos_sim'] > good_cos_sim_limit]
         good_target = good_target[good_target['sqrt_cos_sim']
@@ -537,6 +573,8 @@ def refigs_identification_for_args(
             good_sqrt_cos_sim_limit=arg_sqrt_cos_sim_limit  
             args_list.append([max_identification_count,good_shared_limit,good_cos_sim_limit,good_sqrt_cos_sim_limit,good_count_within_cycle_limit])
     for arg_count_within_cycle_limit in good_count_within_cycle_limits:
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         good_target = target[target['shared'] > good_shared_limit]
         good_target = good_target[good_target['cos_sim'] > good_cos_sim_limit]
         good_target = good_target[good_target['sqrt_cos_sim']

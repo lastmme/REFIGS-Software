@@ -1,37 +1,261 @@
 # RE-FIGS-Software
 
-## 源代码-环境配置
+RE-FIGS 用于直接进样鸟枪法蛋白质组分析（DI-SPA）的肽段鉴定与无标记定量，提供图谱库配置、多文件并行分析、进度查看、终止批次和文件日志归档功能。
 
-请按照以下步骤配置环境：
+- [项目源码](https://github.com/lastmme/REFIGS-Software)
+- [安装包下载](https://github.com/lastmme/REFIGS-Software/releases)
+- [RE-FIGS 论文](https://pubs.acs.org/doi/10.1021/acs.jproteome.3c00050)
 
-1. **使用 `environment.yml` 文件创建 Conda 环境**：
+## 安装前准备
 
-    ```bash
-    conda env create -f environment.yml
-    ```
+本教程面向 **Windows 10/11 64 位**，命令使用 PowerShell。当前开发环境使用 Python 3.9.23，依赖版本见 `requirements.txt`。并行文件越多，内存需求通常越高，请按机器资源设置并发数量。
 
-    这将根据 `environment.yml` 文件中的配置创建一个新的 Conda 环境。
+准备以下文件：
 
-2. **使用 `requirements.txt` 文件安装依赖**：
+- 实验数据：`.mzXML` 文件。
+- 参考图谱库：`.mgf` 文件；如果复用本软件已生成的预计算库，可以不提供 MGF。
+- 可写入且有足够空间的结果文件夹。
 
-    激活你的 Conda 环境：
+## 从源码安装与配置（uv）
 
-    ```bash
-    conda activate refigs
-    ```
+### 1. 获取源码
 
-    然后使用 `pip` 安装依赖：
+已安装 Git 时运行：
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+```powershell
+git clone https://github.com/lastmme/REFIGS-Software.git
+cd REFIGS-Software
+```
 
-    这将根据 `requirements.txt` 文件中的配置安装所有必要的 Python 包。
+也可在项目页面下载 ZIP，解压后在项目文件夹打开 PowerShell。确认当前目录包含 `main.py`、`requirements.txt` 和 `UI` 文件夹。
 
-    3. **注意**：
+已有源码时直接进入实际路径，例如：
 
-        请注意，`environment.yml` 文件已经包含了 `requirements.txt` 文件中的配置。因此，通常情况下，你只需要使用 `environment.yml` 文件来创建和配置环境，而不需要单独运行 `pip install -r requirements.txt`。
+```powershell
+cd "C:\Users\xht\Desktop\REFIGS-Software"
+```
 
-## 软件安装地址
+### 2. 安装 uv
 
-[RE-FIGS-Software](https://github.com/lastmme/REFIGS-Software/releases/tag/test)
+使用 Windows 的 WinGet 安装：
+
+```powershell
+winget install --id=astral-sh.uv -e
+```
+
+安装后重新打开 PowerShell，检查：
+
+```powershell
+uv --version
+```
+
+没有 WinGet 时，可使用 [uv 官方安装文档](https://docs.astral.sh/uv/getting-started/installation/) 中的 Windows 安装方式。无需额外安装 Conda。
+
+### 3. 创建项目环境
+
+在项目根目录运行：
+
+```powershell
+uv venv --python 3.9.23 .venv
+```
+
+uv 在需要时下载 Python，并将虚拟环境创建于项目内的 `.venv`。后续命令直接指定解释器，无需先激活环境。不要将其他机器的 `.venv` 复制过来使用，应按本教程重建。
+
+### 4. 安装依赖
+
+```powershell
+uv pip install --python .venv/Scripts/python.exe -r requirements.txt
+```
+
+PySide6 相关组件体积较大，首次下载可能较久。等待命令成功退出；已完成下载不代表所有依赖均已安装。
+
+如需使用中科大 PyPI 镜像，可在当前 PowerShell 会话设置后重新执行安装：
+
+```powershell
+$env:UV_DEFAULT_INDEX = "https://mirrors.ustc.edu.cn/pypi/simple"
+uv pip install --python .venv/Scripts/python.exe -r requirements.txt
+```
+
+该变量只针对包索引，不等同于 Python 解释器下载镜像。恢复本会话中的默认索引设置：
+
+```powershell
+Remove-Item Env:UV_DEFAULT_INDEX -ErrorAction SilentlyContinue
+```
+
+### 5. 检查环境
+
+```powershell
+.\.venv\Scripts\python.exe --version
+uv pip check --python .venv/Scripts/python.exe
+.\.venv\Scripts\python.exe -c "import PySide6, qfluentwidgets, numpy, pandas, scipy, numba, cvxopt; print('Imports OK')"
+```
+
+兼容性检查应报告依赖兼容，导入检查应输出 `Imports OK`。若失败，保留错误内容，检查网络和依赖安装结果。
+
+### 6. 启动软件
+
+每次使用时在项目根目录执行：
+
+```powershell
+.\.venv\Scripts\python.exe main.py
+```
+
+在 VS Code 等 IDE 中，将解释器选择为项目内 `.venv\Scripts\python.exe`，运行入口选择 `main.py`，工作目录设为项目根目录。
+
+项目当前使用 `requirements.txt` 管理依赖，不要求执行 `uv sync`。
+
+### 可选：使用已有 Conda 安装方式
+
+仓库仍保留 `environment.yml`，如需 Conda 可执行：
+
+```powershell
+conda env create -f environment.yml
+conda activate refigs
+python main.py
+```
+
+该配置已包含 pip 依赖，无需再次安装 `requirements.txt`。uv 和 Conda 任选一种，避免混用两个环境的解释器。
+
+## 使用安装包
+
+从 [Releases](https://github.com/lastmme/REFIGS-Software/releases) 下载适用于 Windows 64 位的版本，任选一种：
+
+- **安装版**：下载 `RE-FIGS-1.0.0-windows-x64-setup.exe`，双击并按向导安装，随后从开始菜单启动 RE-FIGS。安装到当前用户目录，不需要额外安装 Python、uv 或 Conda。需要卸载时，在 Windows「设置 → 应用」中找到 RE-FIGS。
+- **便携版**：下载 `RE-FIGS-1.0.0-windows-x64-portable.zip`，完整解压后运行其中的 `RE-FIGS.exe`。请保留同目录的 `_internal` 文件夹，不要只复制 EXE。
+- **校验文件**：`SHA256SUMS.txt` 用于核对下载完整性。在 PowerShell 执行 `Get-FileHash 下载的文件路径 -Algorithm SHA256`，与校验文件中的对应值比较。
+
+安装包未配置代码签名。历史版本可能不包含当前说明中的全部功能，请确认下载版本。
+
+## 使用说明
+
+### 1. 导入文件
+
+进入「参数配置」，选择最终结果存储位置、MGF 图谱库和需要分析的 mzXML 文件。可一次添加多个文件，开始前删除不需要的条目。
+
+「CPU 核心数」表示同时处理文件的数量，实际并发数不会超过输入文件数。内存不足或系统负载较高时降低此值。
+
+### 2. 设置分析参数
+
+| 参数 | 用法 |
+| --- | --- |
+| 诱饵库策略 | trap-decoy 生成诱饵库及反库；decoy 生成反库 |
+| entrapment_distance | 诱饵库质量偏移，单位 ppm，通常大于匹配容差 |
+| decoy_distance | 反库质量偏移，单位 ppm，通常大于 entrapment_distance |
+| FDR 阈值 | 最终鉴定筛选阈值；例如 0.01 表示 1%，运行前确认实际填写值 |
+| tolerance | 谱图匹配质量容差，单位 ppm |
+| is_corrected | 是否启用质量偏移及容差校正 |
+| Top 10 的峰 | 是否仅使用图谱库中强度最高的 10 个峰 |
+| start_cycle / end_cycle | 分析循环范围，包含起始值、不包含终止值；1 到 14 对应第 1–13 个循环 |
+| 自动搜索 RE-FIGS 参数 | 从本批次选取最多 5 个文件搜索参数，再用于正式分析；关闭则使用手动阈值 |
+| peaks_shared_limit | 优质训练目标的匹配峰数阈值，实际筛选条件为大于该值 |
+| cosine score limit | 余弦相似度阈值，实际筛选条件为大于该值 |
+| sqrt cosine score | 平方根强度相关相似度阈值，实际筛选条件为大于该值 |
+| cycle within limit | 优质训练目标在循环内出现次数阈值，实际筛选条件为大于等于该值 |
+| random seed | 随机种子；比较结果时保持一致 |
+
+自动寻参会增加正式分析前的等待时间。FDR 为 0 与 0.01 含义不同，请根据实验要求设置；训练目标不足也不能仅通过修改 FDR 解决。
+
+### 3. 可选：复用已有预计算 decoy 库
+
+1. 开启「使用预计算 decoy 库」。
+2. 选择包含配套 `library.npy` 和 `csodiaq_library.npy` 的目录，例如历史批次的 `_shared`。
+3. 继续配置后续分析参数并开始。
+
+启用后无需 MGF，程序跳过建库，将库复制到当前批次。MGF、策略、距离和 Top 10 控件禁用，这些设置沿用库原有内容；FDR、容差及后续鉴定参数仍可调整。自动寻参仍按开关执行。
+
+两个 NPY 必须来自同一次建库且来源可信。旧格式未保存可供核验的完整建库参数，程序无法自动确认两者来源一致；会检查文件存在、可读取且内容为非空字典。无效库导致准备阶段失败，不会静默回退到 MGF 建库。关闭开关恢复从 MGF 建库。
+
+此选项用于复用已有库，不提供单独预计算按钮。
+
+### 4. 开始与查看进度
+
+配置完成后点击执行按钮，软件进入「查看进度」。依次完成谱图库准备、可选自动寻参和文件分析。准备及寻参阶段显示忙碌状态，正式分析按已结束文件数量显示总体进度；已结束包含失败或取消，请同时查看成功与失败数量。
+
+- 使用状态筛选框查看待处理、处理中、成功、失败、已终止或已取消的文件。
+- 点击文件查看该文件的实时或历史日志。
+- 长文件名中间省略，悬停查看完整路径；日志标题支持选中复制和横向查看。
+- 拖动中间分隔条调整文件表与日志区域宽度。
+- 输入日志关键词后按回车查找，再次回车查找下一处。
+- 「复制」复制当前显示日志；「到底部」回到最新日志。向上滚动时暂停自动跟随。
+- 界面显示最近 3000 行；「打开日志」查看磁盘完整日志。搜索和复制仅针对当前显示内容。
+- 选中文件后，「打开结果目录」和「打开日志目录」定位到该文件任务目录。
+
+### 5. 终止与重新运行
+
+「终止任务」停止**整个批次**，目前不支持只停止单个文件。正在处理的文件标记为已终止，尚未开始的文件标记为已取消；已完成结果和日志保留。
+
+发出终止请求后先等待计算主动退出，超过 3 秒仍未退出则强制结束。该超时仅在点击终止或关闭窗口后开始计时，正常计算不会因耗时长而被自动终止，也不用于判断是否死锁。
+
+关闭运行中的窗口同样会停止批次并等待清理。被中断文件的 CSV 可能不完整，请根据任务状态和日志判断，不要将残留文件视为成功结果。
+
+任务结束后保留参数。调整后重新执行会建立新批次目录，不覆盖历史批次。单个文件分析失败时其他文件继续；谱图库准备或自动寻参失败时后续分析取消。
+
+## 结果与日志位置
+
+每个处理文件对应一个任务文件夹，同名文件通过序号区分：
+
+```text
+所选结果目录/
+  时间_批次ID/
+    _shared/
+      library.npy
+      csodiaq_library.npy
+      refigs_params.npy           # 仅自动寻参成功时生成
+      logs/
+        run.log                  # 本次输入文件及配置
+        library.log              # 建库或复用库的日志
+        parameter_search.log     # 开启自动寻参时的日志
+    0000_文件名/
+      task.log
+      各分析结果.csv
+    0001_文件名/
+      task.log
+      各分析结果.csv
+```
+
+共享目录还可能包含自动寻参生成的中间 CSV。界面只显示当前批次，历史批次通过磁盘目录查看。
+
+| 结果文件 | 内容 |
+| --- | --- |
+| *NoFilter.csv | CsoDIAq 初步匹配结果 |
+| *_withFeature_*.csv | 匹配结果及特征，具体名称随参数变化 |
+| *_pvalue.csv | 评分及统计筛选相关结果 |
+| *_LDA_ID.csv | 最终肽段鉴定结果 |
+| *_Coeffs.csv | 肽段在各扫描中的解卷积系数 |
+| *_Quants.csv | 肽段定量结果 |
+
+常见字段：`peptide` 为肽段序列，`scan` 为扫描号，`FDR` 为筛选统计值，`Coeff` 为肽段在对应扫描中的贡献，`Quantify` 为定量值。失败任务可能只生成部分中间文件。
+
+## 常见问题
+
+### 找不到 uv 或 Python
+
+安装 uv 后重新打开终端，执行 `uv --version`。运行软件使用 `.venv\Scripts\python.exe`，避免误用系统 Python。若虚拟环境提示找不到基础 Python，应重新通过 uv 创建环境并安装依赖。
+
+### 下载慢或安装中断
+
+PySide6 等依赖包较大，可等待或切换上文的镜像索引。安装中断后重新执行依赖安装命令，再运行 `uv pip check`；不要只根据下载提示判断安装成功。
+
+### 缺少模块或窗口无法启动
+
+确认当前位于项目根目录且使用项目解释器，重新安装 `requirements.txt`。在 PowerShell 中运行 `main.py` 查看完整错误，并记录出错信息。
+
+### 无法开始分析
+
+检查数据文件、输出目录及图谱库是否已选择。开启预计算库模式时，检查目录中是否同时存在两个配套 NPY 文件。检查输出目录写入权限。
+
+### 优质目标不足，文件失败
+
+LDA 训练至少需要 2 个满足条件的优质目标肽段。不足时该文件停止；新任务日志会记录失败原因、各步筛选剩余数量及实际阈值。检查谱图库与实验数据匹配情况，结合筛选数量调整参数，或开启自动寻参后重试。不要将 SystemExit 或业务条件失败理解为超时终止。
+
+### 运行很慢或内存占用较高
+
+降低并行数量。特征计算和定量解卷积可能耗时较长，日志只在部分检查点输出，无新日志并不等于程序死锁。完整日志写磁盘、界面限制显示行数，但高频输出仍可能造成消息队列积压。
+
+### 终止后还能看到结果文件
+
+终止不会删除已有输出。部分文件可能尚未写完，应结合日志与状态确认；重新运行会进入新批次目录。
+
+### 安装版或便携版无法启动
+
+如果尚未生成任务日志，可检查 `%LOCALAPPDATA%\RE-FIGS\startup.log`，反馈问题时一并提供该文件和软件版本。

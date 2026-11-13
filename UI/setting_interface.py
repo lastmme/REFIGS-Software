@@ -1,4 +1,5 @@
 from typing import Union
+from pathlib import Path as FilePath
 
 from qfluentwidgets import (
     SettingCard,
@@ -273,6 +274,14 @@ class SettingInterface(ScrollArea):
             self.tr('诱饵库参数设置'),
             self.scroll_widget
         )
+        self.use_precomputed = SwitchSettingCard(
+            ':/normal/svgs/normal/library.svg', '使用预计算 decoy 库',
+            '选择本软件生成的可信库目录；跳过建库，使用库原有的策略、距离及 Top 10 设置。',
+            configItem=ConfigItem('decoy_parameters', 'use_precomputed', False),
+            parent=self.decoy_parameters_groups)
+        self.precomputed_card = PushSettingCard(
+            '选择目录', ':/normal/svgs/normal/library.svg', '预计算库目录',
+            '', self.decoy_parameters_groups)
         self.strategy_card = ComboBoxSettingCard(
             OptionsConfigItem(
                 'decoy_parameters',
@@ -527,6 +536,8 @@ class SettingInterface(ScrollArea):
         )
         self.decoy_parameters_groups.addSettingCards(
             [
+                self.use_precomputed,
+                self.precomputed_card,
                 self.strategy_card,
                 self.entrap_distance_card,
                 self.decoy_distance_card,
@@ -601,9 +612,24 @@ class SettingInterface(ScrollArea):
         )
 
     def _connect_signal2solt(self):
+        self.precomputed_card.clicked.connect(self._choose_precomputed)
+        self.use_precomputed.checkedChanged.connect(self._update_library_mode)
+        self._update_library_mode()
         self.library_file_card.clicked.connect(self._choose_library)
         self.result_file_card.clicked.connect(self._choose_reuslt_folder)
         self.excute_button.clicked.connect(self.excute_signal)
+
+    def _choose_precomputed(self):
+        folder = QFileDialog.getExistingDirectory(self, '选择包含两个 .npy 库文件的目录')
+        if folder:
+            self.precomputed_card.setContent(folder)
+
+    def _update_library_mode(self, *args):
+        enabled = bool(self.use_precomputed.configItem.value)
+        self.precomputed_card.setEnabled(enabled)
+        for card in (self.library_file_card, self.strategy_card,
+                     self.entrap_distance_card, self.decoy_distance_card, self.top10_card):
+            card.setEnabled(not enabled)
 
     def _choose_reuslt_folder(self):
         folder = QFileDialog.getExistingDirectoryUrl(
@@ -626,6 +652,8 @@ class SettingInterface(ScrollArea):
         """
             TODO:  将所有设置恢复为默认值
         """
+        self.use_precomputed.setChecked(False)
+        self.precomputed_card.setContent('')
         self.mzxml_files_card.deleteAllFiles()
         self.result_file_card.contentLabel.setText('')
         self.result_file_card.contentLabel.setVisible(bool(''))
@@ -658,7 +686,13 @@ class SettingInterface(ScrollArea):
             self.excute_button.setEnabled(True)
             self.show_error_message('Error', 'Please select mzXML files')
             return None
-        if self.library_file_card.contentLabel.text() == '':
+        precomputed = self.precomputed_card.contentLabel.text() if self.use_precomputed.configItem.value else ''
+        if self.use_precomputed.configItem.value and (not precomputed or not all(
+                (FilePath(precomputed) / name).is_file() for name in ('library.npy', 'csodiaq_library.npy'))):
+            self.excute_button.setEnabled(True)
+            self.show_error_message('预计算库不完整', '请选择包含 library.npy 和 csodiaq_library.npy 的目录。')
+            return None
+        if not self.use_precomputed.configItem.value and self.library_file_card.contentLabel.text() == '':
             self.excute_button.setEnabled(True)
             self.show_error_message('Error', 'Please select library file')
             return None
@@ -672,6 +706,7 @@ class SettingInterface(ScrollArea):
             # 'mzml_files': self.mzml_files_card.files,
             'result_dir': self.result_file_card.contentLabel.text(),
             'library_file': self.library_file_card.contentLabel.text(),
+            'precomputed_library_dir': precomputed,
             'is_entrap': self.strategy_card.configItem.value,
             'fdr_value': self.fdr_card.value,
             'entrap_distance': self.entrap_distance_card.configItem.value,

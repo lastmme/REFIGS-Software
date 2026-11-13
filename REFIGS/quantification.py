@@ -33,6 +33,8 @@ def refigs_quantification(
     MS2 = LoadMS2(mzxml_file)
     MS2_dict = {}
     for ms2 in MS2:
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         MS2_dict[ms2[-1]] = ms2
 
     text_queue.put(
@@ -41,6 +43,8 @@ def refigs_quantification(
     output = []
     scans = set(Identify['scan'].values)
     for i, scan in enumerate(scans):
+        if hasattr(text_queue, 'checkpoint'):
+            text_queue.checkpoint()
         if i % 1000 == 0:
             text_queue.put(
                 smf.print_milestone(
@@ -50,6 +54,8 @@ def refigs_quantification(
         keys = tmp_df['Precursor'].values
         tmp_library = {}
         for key in keys:
+            if hasattr(text_queue, 'checkpoint'):
+                text_queue.checkpoint()
             tmp_library[(key.split('_')[0], int(key.split('_')[1]))
                         ] = library[(key.split('_')[0], int(key.split('_')[1]))]
         tmp_ms2 = MS2_dict[scan]
