@@ -54,6 +54,8 @@ def perform_spectra_pooling_and_analysis(
     with mzxml.read(querySpectraFile, use_index=True) as spectra:
 
         for precMz_win, scans in queWindowDict.items():
+            if hasattr(text_queue, 'checkpoint'):
+                text_queue.checkpoint()
             top_mz = precMz_win[0] + precMz_win[1] / 2
             bottom_mz = precMz_win[0] - precMz_win[1] / 2
             libKeys = identify_lib_spectra_in_window(
@@ -64,6 +66,8 @@ def perform_spectra_pooling_and_analysis(
             pooledQueSpectra = []
 
             for i in range(len(scans)):
+                if hasattr(text_queue, 'checkpoint'):
+                    text_queue.checkpoint()
                 scanNumber = scans[i]
                 queSpectrum = spectra.get_by_id(scanNumber)
                 pooledQueSpectra.append(

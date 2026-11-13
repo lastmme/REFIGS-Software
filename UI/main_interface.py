@@ -62,13 +62,15 @@ class Window(MSFluentWindow):
         del other_params['mzxml_files']
         self.view_progress_interface._init_workers(pipeline,worker_num,mzxml_files,other_params)
         self.navigationInterface.setCurrentItem(
-            self.setting_interface.objectName()
+            self.view_progress_interface.objectName()
         )
         self.switchTo(self.view_progress_interface)
         # self.view_progress_interface.callib_first()
         
     def task_over(self):
-        self.setting_interface.reset()
+        self.setting_interface.excute_button.setEnabled(True)
+        if getattr(self, "_closing", False):
+            self.close()
 
     def init_navigation(self):
         self.addSubInterface(
@@ -101,7 +103,11 @@ class Window(MSFluentWindow):
         self.move(w//2 - self.width()//2, h//2 - self.height()//2)
 
     def closeEvent(self, e):
-        self.view_progress_interface.destroy_wokers()
+        if self.view_progress_interface.state in ("running", "stopping"):
+            self._closing = True
+            self.view_progress_interface.stop()
+            e.ignore()
+            return
         return super().closeEvent(e)
 
 

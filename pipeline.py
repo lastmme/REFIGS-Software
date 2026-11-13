@@ -2,6 +2,9 @@ import os,sys
 from typing import Sequence
 from multiprocessing import Queue
 import traceback
+from pathlib import Path
+import shutil
+from utils.task_runtime import TaskFailed
 
 import numpy as np
 from utils.library import extend_library
@@ -32,7 +35,8 @@ def pipeline(
     # scans_per_cycle: int,
     seed: int,
     text_queue: Queue,
-    max_num_spectra_pool: int = np.inf 
+    max_num_spectra_pool: int = np.inf,
+    library_dir: str = None,
 ):
     """
     TODO: 
@@ -59,8 +63,8 @@ def pipeline(
     """
     try:
         
-        library=np.load(os.path.join(result_dir,'library.npy'),allow_pickle=True).item()
-        csodiaq_library=np.load(os.path.join(result_dir,'csodiaq_library.npy'),allow_pickle=True).item()
+        library=np.load(os.path.join(library_dir or result_dir,'library.npy'),allow_pickle=True).item()
+        csodiaq_library=np.load(os.path.join(library_dir or result_dir,'csodiaq_library.npy'),allow_pickle=True).item()
         # text_queue.put('over success')
         # sys.exit()
         
@@ -116,13 +120,15 @@ def pipeline(
             )
         text_queue.put('Over Success')        
         # text_queue.put('over')
+    except TaskFailed:
+        raise
     except Exception as e:
         # 将错误信息发送到 text_queue
         error_info = traceback.format_exc()
         text_queue.put(f'Process Error: {str(e)}')
         print(error_info)
         text_queue.put(f'Over Error: {str(e)}')
-        sys.exit()
+        raise
 
 def cal_library(
     result_dir: str,
@@ -243,4 +249,4 @@ def search_args_by_files(
         text_queue.put(f'Process Error: {str(e)}')
         print(error_info)
         text_queue.put(f'Over Error: {str(e)}')
-        sys.exit()
+        raise
