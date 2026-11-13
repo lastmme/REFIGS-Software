@@ -141,6 +141,20 @@ def cal_library(
     **kwargs
     ):
     
+    precomputed = kwargs.get('precomputed_library_dir')
+    if precomputed:
+        source = Path(precomputed)
+        for name in ('library.npy', 'csodiaq_library.npy'):
+            if hasattr(text_queue, 'checkpoint'):
+                text_queue.checkpoint()
+            data = np.load(source / name, allow_pickle=True).item()
+            if not isinstance(data, dict) or not data:
+                raise ValueError(f'预计算库无效或为空：{name}')
+            del data
+            shutil.copyfile(source / name, Path(result_dir) / name)
+            text_queue.put(f'已复用预计算库：{source / name}')
+        text_queue.put('cal library over')
+        return
     # text_queue.put('cal library over')  
     # return
     
