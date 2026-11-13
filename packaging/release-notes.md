@@ -1,9 +1,8 @@
-﻿# RE-FIGS v1.0.0
+# RE-FIGS v1.0.0
 
 ## Windows 下载
 
 - `RE-FIGS-1.0.0-windows-x64-setup.exe`：Windows 64 位安装包，安装到当前用户目录，无需额外安装 Python/Conda。
-- `RE-FIGS-1.0.0-windows-x64-portable.zip`：便携版，完整解压后运行文件夹内 RE-FIGS.exe，请勿单独移动 EXE。
 - `SHA256SUMS.txt`：下载文件 SHA-256 校验值。
 
 ## 更新
