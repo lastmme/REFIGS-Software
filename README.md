@@ -16,97 +16,28 @@ RE-FIGS 用于直接进样鸟枪法蛋白质组分析（DI-SPA）的肽段鉴定
 - 参考图谱库：`.mgf` 文件；如果复用本软件已生成的预计算库，可以不提供 MGF。
 - 可写入且有足够空间的结果文件夹。
 
-## 从源码安装与配置（uv）
+## 从源码安装
 
-### 1. 获取源码
-
-已安装 Git 时运行：
+获取源码并进入项目目录：
 
 ```powershell
 git clone https://github.com/lastmme/REFIGS-Software.git
 cd REFIGS-Software
 ```
 
-也可在项目页面下载 ZIP，解压后在项目文件夹打开 PowerShell。确认当前目录包含 `main.py`、`requirements.txt` 和 `UI` 文件夹。
+以下两种方式任选一种。
 
-已有源码时直接进入实际路径，例如：
+### uv
 
-```powershell
-cd "C:\Users\xht\Desktop\REFIGS-Software"
-```
-
-### 2. 安装 uv
-
-使用 Windows 的 WinGet 安装：
+先安装 [uv](https://docs.astral.sh/uv/getting-started/installation/)，然后创建环境、安装依赖并启动：
 
 ```powershell
-winget install --id=astral-sh.uv -e
-```
-
-安装后重新打开 PowerShell，检查：
-
-```powershell
-uv --version
-```
-
-没有 WinGet 时，可使用 [uv 官方安装文档](https://docs.astral.sh/uv/getting-started/installation/) 中的 Windows 安装方式。无需额外安装 Conda。
-
-### 3. 创建项目环境
-
-在项目根目录运行：
-
-```powershell
-uv venv --python 3.9.23 .venv
-```
-
-uv 在需要时下载 Python，并将虚拟环境创建于项目内的 `.venv`。后续命令直接指定解释器，无需先激活环境。不要将其他机器的 `.venv` 复制过来使用，应按本教程重建。
-
-### 4. 安装依赖
-
-```powershell
+uv venv --python 3.9 .venv
 uv pip install --python .venv/Scripts/python.exe -r requirements.txt
-```
-
-PySide6 相关组件体积较大，首次下载可能较久。等待命令成功退出；已完成下载不代表所有依赖均已安装。
-
-如需使用中科大 PyPI 镜像，可在当前 PowerShell 会话设置后重新执行安装：
-
-```powershell
-$env:UV_DEFAULT_INDEX = "https://mirrors.ustc.edu.cn/pypi/simple"
-uv pip install --python .venv/Scripts/python.exe -r requirements.txt
-```
-
-该变量只针对包索引，不等同于 Python 解释器下载镜像。恢复本会话中的默认索引设置：
-
-```powershell
-Remove-Item Env:UV_DEFAULT_INDEX -ErrorAction SilentlyContinue
-```
-
-### 5. 检查环境
-
-```powershell
-.\.venv\Scripts\python.exe --version
-uv pip check --python .venv/Scripts/python.exe
-.\.venv\Scripts\python.exe -c "import PySide6, qfluentwidgets, numpy, pandas, scipy, numba, cvxopt; print('Imports OK')"
-```
-
-兼容性检查应报告依赖兼容，导入检查应输出 `Imports OK`。若失败，保留错误内容，检查网络和依赖安装结果。
-
-### 6. 启动软件
-
-每次使用时在项目根目录执行：
-
-```powershell
 .\.venv\Scripts\python.exe main.py
 ```
 
-在 VS Code 等 IDE 中，将解释器选择为项目内 `.venv\Scripts\python.exe`，运行入口选择 `main.py`，工作目录设为项目根目录。
-
-项目当前使用 `requirements.txt` 管理依赖，不要求执行 `uv sync`。
-
-### 可选：使用已有 Conda 安装方式
-
-仓库仍保留 `environment.yml`，如需 Conda 可执行：
+### Conda
 
 ```powershell
 conda env create -f environment.yml
@@ -114,7 +45,7 @@ conda activate refigs
 python main.py
 ```
 
-该配置已包含 pip 依赖，无需再次安装 `requirements.txt`。uv 和 Conda 任选一种，避免混用两个环境的解释器。
+`environment.yml` 已包含项目依赖，无需重复安装 `requirements.txt`。
 
 ## 使用安装包
 
@@ -234,7 +165,7 @@ python main.py
 
 ### 下载慢或安装中断
 
-PySide6 等依赖包较大，可等待或切换上文的镜像索引。安装中断后重新执行依赖安装命令，再运行 `uv pip check`；不要只根据下载提示判断安装成功。
+PySide6 等依赖包较大，可等待或选择可用的 PyPI 镜像。安装中断后重新执行依赖安装命令，再运行 `uv pip check`；不要只根据下载提示判断安装成功。
 
 ### 缺少模块或窗口无法启动
 
